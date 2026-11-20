@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="HTECH LeadFlow">
+  <description>WordPress coding standards for the runtime plugin.</description>
+  <file>htech-leadflow.php</file><file>uninstall.php</file><file>src</file>
+  <arg name="extensions" value="php"/>
+  <rule ref="WordPress"/>
+  <config name="minimum_supported_wp_version" value="6.6"/>
+</ruleset>

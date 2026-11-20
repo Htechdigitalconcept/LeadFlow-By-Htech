@@ -1,0 +1,108 @@
+name: Verify LeadFlow
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, mysqli
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dev tooling
+        run: composer install --no-interaction --prefer-dist
+      - name: Syntax and packaging
+        run: |
+          find src tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l htech-leadflow.php
+          php -l uninstall.php
+          node --check assets/admin.js
+          node --check assets/public.js
+          node --check tests/browser-qa.cjs
+          ./scripts/package.sh build
+      - name: PHP 8.1+ compatibility scan
+        run: |
+          mkdir -p build
+          set -o pipefail
+          vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 8.1- --extensions=php htech-leadflow.php uninstall.php src | tee build/phpcompat.log
+      - name: WordPress Coding Standards
+        run: |
+          set -o pipefail
+          vendor/bin/phpcs --report=full --report-file=build/wpcs.txt
+      - name: Collect build and static results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-and-static-reports
+          path: build/
+      - name: Summarize static verification
+        if: always()
+        run: echo "Static checks and packaging: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {php: '8.1', wp: '6.6', db: 'mariadb:10.11', woo: false}
+          - {php: '8.3', wp: 'latest', db: 'mysql:8.4', woo: false}
+          - {php: '8.4', wp: 'latest', db: 'mariadb:11.8', woo: true}
+    services:
+      db:
+        image: ${{ matrix.db }}
+        ports: ['3306:3306']
+        env:
+          MYSQL_DATABASE: htecl_test
+          MYSQL_USER: htecl_test
+          MYSQL_PASSWORD: local-test-only
+          MYSQL_ROOT_PASSWORD: local-test-admin-only
+        options: >-
+          --health-cmd="mysqladmin ping || mariadb-admin ping"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, mysqli, zip
+          coverage: none
+          tools: wp-cli
+      - run: composer install --no-interaction --prefer-dist
+      - name: Prepare disposable WordPress
+        env:
+          WP_VERSION: ${{ matrix.wp }}
+          HTECL_DB_HOST: 127.0.0.1:3306
+          HTECL_DB_NAME: htecl_test
+          HTECL_DB_USER: htecl_test
+          HTECL_DB_PASSWORD: local-test-only
+          HTECL_WP_PATH: ${{ runner.temp }}/htecl-wordpress
+          WITH_WOO: ${{ matrix.woo }}
+        run: ./scripts/setup-test-wp.sh
+      - name: Run database integration tests
+        env:
+          HTECL_WP_PATH: ${{ runner.temp }}/htecl-wordpress
+          HTECL_TEST_ALLOW_RESET: '1'
+        run: |
+          mkdir -p build
+          set -o pipefail
+          vendor/bin/phpunit --log-junit build/junit.xml | tee build/phpunit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phpunit-${{ matrix.php }}-${{ matrix.wp }}
+          path: build/
+      - name: Write test summary
+        if: always()
+        run: |
+          printf '### PHP %s / WP %s / %s\n\nStatus: %s\n\n' '${{ matrix.php }}' '${{ matrix.wp }}' '${{ matrix.db }}' '${{ job.status }}' >> "$GITHUB_STEP_SUMMARY"
+          if test -f build/phpunit.txt; then tail -5 build/phpunit.txt >> "$GITHUB_STEP_SUMMARY"; fi
