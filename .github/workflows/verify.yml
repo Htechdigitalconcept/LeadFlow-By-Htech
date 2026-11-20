@@ -47,7 +47,8 @@ jobs:
           path: build/
       - name: Summarize static verification
         if: always()
-        run: echo "Static checks and packaging: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Static checks and packaging: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
   integration:
     runs-on: ubuntu-latest
     strategy:

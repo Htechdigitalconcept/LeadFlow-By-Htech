@@ -13,7 +13,7 @@
 | PHPCompatibilityWP source scan | Configured for PHP 8.1+ | **Pass** — static scan, not a PHP 8.1 runtime test |
 | WordPress Coding Standards | Full `WordPress` ruleset | **Fail** — 385 errors and 114 warnings; CI quality gate is not waived |
 | Packaging | Runtime file allowlist, compressed ZIP integrity and SHA-256 | **Pass** |
-| GitHub Actions | Workflow configured for PRs, main and version tags | **Not run remotely** — no authenticated repo or push |
+| GitHub Actions | Workflow configured for PRs, main and version tags | Source published to GitHub. First run failed before starting jobs due to YAML syntax; corrected in a follow-up commit. See the repository Actions tab for current status. |
 
 PHPUnit exercises schema and index creation, defaults and capabilities, form rendering and validation, local storage, deduplication, cascades, WhatsApp URLs, nonce age and rate limiting, source/date search and conversion, CSV parsing and formula guards, privacy export/erase, retention, mail contents and failure handling, recipient privilege separation, and idempotent schema reapplication.
 

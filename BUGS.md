@@ -14,6 +14,8 @@ Severity refers to this release candidate. Closed items have a regression check;
 | LF-008 | Medium / open | Send submissions from many addresses, or place WordPress behind a proxy presenting all visitors as one IP. The limiter keys on server-reported IP per form. | Configure host-level limits and correct trusted-proxy handling outside the plugin; no untrusted forwarding headers are used. Future regression: load and address-sharing test on the intended host. |
 | LF-009 | Low / open | Import identical, previously absent contacts concurrently using multiple administrators; detection isn't globally serialized between imports. | Normal import rechecks before insert; remaining duplicates can be reviewed. Future regression: concurrent import test with a lock or documented batch semantics. |
 
+| LF-010 | Medium / fixed | The first GitHub push created a failed workflow run with no jobs. The unquoted inline `run` contained a colon followed by a space, which is invalid YAML in this context. | Use a YAML block scalar. Parse the workflow and check that the summary step is a shell string. |
+
 ## Other product limits
 
 - Site-level activation only; no multisite or network activation compatibility claim. See the qualification matrix before use with Elementor, other themes, PHP 8.1/8.3, or MySQL.
