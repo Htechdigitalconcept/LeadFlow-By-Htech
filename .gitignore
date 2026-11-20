@@ -1,0 +1,15 @@
+/vendor/
+/node_modules/
+/.wp-env/
+/.env*
+!.env.example
+/wp-config.php
+/.phpunit.cache/
+/.phpunit.result.cache
+/.phpcs-cache
+/build/
+/release/
+*.sql
+*.sqlite
+*.log
+*.zip
